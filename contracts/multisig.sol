@@ -25,6 +25,11 @@ contract Multisig{
 
     mapping(uint => mapping(address => bool)) hasSigned;
 
+    event TransactionCreated(uint _TxID, address _creator);
+    event TransactionApproved(uint _TxID, address _signer);
+    event TransactionExecuted(uint _TxID, uint amount, address receiver);
+    event OwnershipTransferred(address _newOwner);
+
     constructor(address [] memory _signers, uint _quorum){
         Owner = msg.sender;
         quorum = _quorum;
@@ -54,6 +59,8 @@ contract Multisig{
         txcount = txcount + 1;
 
         hasSigned[tnxID][msg.sender] = true;
+
+        emit TransactionCreated(tnxID, msg.sender);
     }
 
     function approveTransaction (uint _txID) external {
@@ -73,10 +80,14 @@ contract Multisig{
 
         hasSigned[_txID][msg.sender] = true;
 
+        emit TransactionApproved(_txID, msg.sender);
+
         require (address(this).balance >= tnx.amount);
 
         if(tnx.signerCount == quorum){
             payable (tnx.receiver).transfer(tnx.amount);
+
+            emit TransactionExecuted(_txID, tnx.amount, tnx.receiver);
         }
 
     }
@@ -106,5 +117,8 @@ contract Multisig{
         require(msg.sender == newOwner, "Not New Owner");
 
         Owner = msg.sender;
+
+        emit OwnershipTransferred(newOwner);
+
     }
 }
